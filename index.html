@@ -420,7 +420,7 @@
 <div class="container">
 
   <h1>Тайный Санта</h1>
-  <div class="subtitle">5 класс · регистрация с любого устройства</div>
+  <div class="subtitle">5 класс · 2026–2027 год</div>
 
   <!-- ============ ЭТАП 1 ============ -->
   <div id="stage1" class="card">
@@ -678,7 +678,7 @@ const loadingSteps = [
 ];
 
 function showLoadingScreen(callback) {
-  document.body.classList.add('loading');   // скрываем снежинки
+  document.body.classList.add('loading');
   const ls = $('loadingScreen');
   ls.classList.remove('hidden');
   const bar = $('loadBarFill');
@@ -697,7 +697,7 @@ function showLoadingScreen(callback) {
       setTimeout(() => {
         ls.classList.add('hidden');
         bar.style.width = '0%';
-        document.body.classList.remove('loading');  // возвращаем снежинки
+        document.body.classList.remove('loading');
         if (callback) callback();
       }, 400);
     }
