@@ -60,16 +60,18 @@
     font-size: 13px; color: #b8e6c1;
     letter-spacing: 1px; text-transform: uppercase;
   }
-  input {
+  input, textarea {
     font-size: 16px; padding: 14px 16px;
     border-radius: 14px;
     border: 2px solid rgba(255,255,255,.2);
     background: rgba(0,0,0,.25); color: #fff;
     width: 100%; margin-top: 8px;
     font-family: inherit; transition: .2s;
+    resize: vertical;
   }
-  input::placeholder { color: #a5d6b0; }
-  input:focus {
+  textarea { min-height: 70px; }
+  input::placeholder, textarea::placeholder { color: #a5d6b0; }
+  input:focus, textarea:focus {
     outline: none; border-color: #7bdc8b;
     background: rgba(0,0,0,.4);
     box-shadow: 0 0 0 4px rgba(123,220,139,.15);
@@ -124,6 +126,14 @@
     line-height: 1.6; padding: 22px;
   }
   .result b { color: #ffd166; font-size: 22px; }
+  .result .wish-line {
+    display: block;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(123,220,139,.3);
+    color: #eaffef;
+    font-size: 15px;
+  }
   .hidden { display: none !important; }
   .list-names { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
   .chip {
@@ -173,6 +183,13 @@
     <div id="regForm">
       <label>Твоё имя</label>
       <input id="nameInput" placeholder="Например: Маша" autocomplete="off" maxlength="30">
+
+      <label>Что хочешь в подарок? 🤫</label>
+      <textarea id="wishInput" placeholder="Например: наклейки, книгу про драконов..." maxlength="150"></textarea>
+      <div style="font-size:12px; color:#b8e6c1; margin-top:6px; text-align:center;">
+        🔒 Твоё пожелание увидит только тот, кто будет дарить тебе подарок
+      </div>
+
       <button id="addBtn">✨ Записаться</button>
     </div>
 
@@ -265,11 +282,11 @@ async function nameExists(name) {
   return list.some(p => p.name.toLowerCase() === name.toLowerCase());
 }
 
-async function addParticipant(name) {
+async function addParticipant(name, wish) {
   await fetch(`${FIREBASE_URL}/participants.json`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, ts: Date.now() })
+    body: JSON.stringify({ name, wish, ts: Date.now() })
   });
 }
 
@@ -300,6 +317,7 @@ function renderList() {
 
   const list = $('namesList');
   list.innerHTML = '';
+  // 🔒 Показываем ТОЛЬКО имена — БЕЗ пожеланий
   participants.forEach(p => {
     const chip = document.createElement('div');
     chip.className = 'chip';
@@ -325,7 +343,8 @@ async function maybeShuffle() {
   const newPairs = {};
   shuffled.forEach((p, i) => {
     const target = shuffled[(i + 1) % shuffled.length];
-    newPairs[p.name] = { to: target.name };
+    // 🔒 В пары сохраняем и имя, и пожелание — но отдаём их только при показе
+    newPairs[p.name] = { to: target.name, wish: target.wish || 'пожелание не указано' };
   });
 
   await savePairs(newPairs);
@@ -385,6 +404,7 @@ $('addBtn').onclick = async () => {
   }
 
   const name = $('nameInput').value.trim();
+  const wish = $('wishInput').value.trim() || 'пожелание не указано';
 
   if (!name) return showMsg('msg1', 'Сначала введи имя!');
   if (participants.some(p => p.name.toLowerCase() === name.toLowerCase()))
@@ -398,9 +418,10 @@ $('addBtn').onclick = async () => {
       showMsg('msg1', 'Ой, такое имя уже записано!');
       return;
     }
-    await addParticipant(name);
+    await addParticipant(name, wish);
     setMyName(name);
     $('nameInput').value = '';
+    $('wishInput').value = '';
     showMsg('msg1', `✅ ${name} записан(а)!`);
     showRegisteredState();
     await refresh();
@@ -410,7 +431,7 @@ $('addBtn').onclick = async () => {
 };
 
 $('nameInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') $('addBtn').click();
+  if (e.key === 'Enter') $('wishInput').focus();
 });
 
 // ============ ПОКАЗ ПАРЫ ============
@@ -430,7 +451,10 @@ $('revealBtn').onclick = () => {
 
   const box = $('msg2');
   box.className = 'msg result';
-  box.innerHTML = `Ты даришь подарок для <b>${p.to}</b>`;
+  box.innerHTML = `
+    Ты даришь подарок для <b>${p.to}</b>
+    <span class="wish-line">💭 Его пожелание: <b>${p.wish}</b></span>
+  `;
   box.classList.remove('hidden');
   $('hideBtn').classList.remove('hidden');
 };
