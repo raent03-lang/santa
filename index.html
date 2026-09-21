@@ -16,6 +16,7 @@
     overflow-x: hidden; position: relative;
   }
   #snow { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+  body.loading #snow { display: none; }
   .snowflake {
     position: absolute; top: -10vh; color: #fff;
     animation: fall linear infinite;
@@ -192,29 +193,37 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: radial-gradient(ellipse at center, #1e5631 0%, #0d2f1c 60%, #061a10 100%);
+    background: linear-gradient(180deg, #1e5631 0%, #0d2f1c 60%, #061a10 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 24px;
     padding: 20px;
+    animation: fadeIn .35s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
   #loadingScreen .tree {
     font-size: 90px;
-    animation: treePulse 1.5s ease-in-out infinite;
-    filter: drop-shadow(0 0 24px rgba(255,209,102,.7));
+    line-height: 1;
+    animation: treePulse 1.8s ease-in-out infinite;
+    filter: drop-shadow(0 0 24px rgba(255,209,102,.7))
+            drop-shadow(0 0 40px rgba(46,204,113,.5));
   }
   @keyframes treePulse {
-    0%, 100% { transform: scale(1) rotate(-3deg); }
-    50%      { transform: scale(1.15) rotate(3deg); }
+    0%, 100% { transform: scale(1) rotate(-2deg); }
+    50%      { transform: scale(1.12) rotate(2deg); }
   }
   #loadingScreen .load-title {
     font-size: 26px;
     font-weight: 700;
     color: #fff;
     text-align: center;
-    text-shadow: 0 0 14px rgba(255,209,102,.7);
+    text-shadow: 0 0 14px rgba(255,209,102,.8),
+                 0 0 30px rgba(46,204,113,.5);
     letter-spacing: 1px;
   }
   #loadingScreen .load-subtitle {
@@ -222,6 +231,8 @@
     color: #b8e6c1;
     text-align: center;
     min-height: 22px;
+    font-weight: 600;
+    letter-spacing: .5px;
   }
   #loadingScreen .load-bar {
     width: 260px;
@@ -230,35 +241,46 @@
     background: rgba(0,0,0,.5);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 0 20px rgba(123,220,139,.3);
+    box-shadow: 0 0 20px rgba(123,220,139,.35),
+                inset 0 0 8px rgba(0,0,0,.6);
   }
   #loadingScreen .load-bar-fill {
     height: 100%;
     width: 0;
-    background: linear-gradient(90deg, #7bdc8b, #ffd166, #ff6b9d);
-    background-size: 200% 100%;
+    background: linear-gradient(90deg, #7bdc8b, #ffd166, #ff6b9d, #7bdc8b);
+    background-size: 300% 100%;
     animation: shimmer 2s linear infinite;
-    transition: width .4s ease;
+    transition: width .3s ease;
+    border-radius: 8px;
   }
   @keyframes shimmer {
     0%   { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
+    100% { background-position: 300% 50%; }
   }
   #loadingScreen .dots {
-    display: flex; gap: 10px;
-    margin-top: 8px;
+    display: flex; gap: 12px;
+    margin-top: 10px;
   }
   #loadingScreen .dot {
-    width: 10px; height: 10px;
+    width: 12px; height: 12px;
     border-radius: 50%;
     background: #ffd166;
+    box-shadow: 0 0 12px rgba(255,209,102,.6);
     animation: bounce 1.2s ease-in-out infinite;
   }
-  #loadingScreen .dot:nth-child(2) { animation-delay: .2s; background: #7bdc8b; }
-  #loadingScreen .dot:nth-child(3) { animation-delay: .4s; background: #ff6b9d; }
+  #loadingScreen .dot:nth-child(2) {
+    animation-delay: .15s;
+    background: #7bdc8b;
+    box-shadow: 0 0 12px rgba(123,220,139,.6);
+  }
+  #loadingScreen .dot:nth-child(3) {
+    animation-delay: .3s;
+    background: #ff6b9d;
+    box-shadow: 0 0 12px rgba(255,107,157,.6);
+  }
   @keyframes bounce {
-    0%, 80%, 100% { transform: translateY(0); opacity: .5; }
-    40%           { transform: translateY(-14px); opacity: 1; }
+    0%, 80%, 100% { transform: translateY(0) scale(1); opacity: .5; }
+    40%           { transform: translateY(-14px) scale(1.2); opacity: 1; }
   }
 
   /* ============ АДМИН-КНОПКА ============ */
@@ -656,6 +678,7 @@ const loadingSteps = [
 ];
 
 function showLoadingScreen(callback) {
+  document.body.classList.add('loading');   // скрываем снежинки
   const ls = $('loadingScreen');
   ls.classList.remove('hidden');
   const bar = $('loadBarFill');
@@ -674,6 +697,7 @@ function showLoadingScreen(callback) {
       setTimeout(() => {
         ls.classList.add('hidden');
         bar.style.width = '0%';
+        document.body.classList.remove('loading');  // возвращаем снежинки
         if (callback) callback();
       }, 400);
     }
