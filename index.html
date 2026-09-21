@@ -434,8 +434,6 @@
     <h2>🎁 Твоя пара</h2>
 
     <div id="whoAmI" class="who-am-i"></div>
-
-    <!-- Результат: показывается сразу -->
     <div id="resultBox"></div>
   </div>
 
@@ -679,7 +677,7 @@ function showLoadingScreen(callback) {
         if (callback) callback();
       }, 400);
     }
-  }, 120);  // ~2.4 секунды
+  }, 120); // ~2.4 сек
 }
 
 // ============ ПАРЫ ============
@@ -698,13 +696,12 @@ async function createPairs(force = false) {
   return true;
 }
 
-// Показ результата — теперь БЕЗ кнопок
+// Показ результата — БЕЗ кнопок
 function renderResult() {
   const myName = getMyName();
   const box = $('resultBox');
   const who = $('whoAmI');
 
-  // Игра ещё не началась
   if (!pairs || Object.keys(pairs).length === 0) {
     who.innerHTML = '';
     box.innerHTML = `
@@ -717,7 +714,6 @@ function renderResult() {
     return;
   }
 
-  // Игра идёт, но я не зарегистрирован
   if (!myName) {
     who.innerHTML = '';
     box.innerHTML = `
@@ -730,7 +726,6 @@ function renderResult() {
     return;
   }
 
-  // Игра идёт, я зарегистрирован
   who.innerHTML = `Ты — <b>${myName}</b>`;
 
   const p = pairs[myName];
@@ -774,17 +769,13 @@ async function refresh() {
   const existing = await loadPairs();
   const hasGame = existing && Object.keys(existing).length > 0;
 
-  // Определяем, изменилось ли состояние игры → показываем загрузочный экран
   const newState = hasGame ? 'playing' : 'idle';
+
   if (lastGameState !== null && lastGameState !== newState) {
     if (newState === 'playing') {
-      // Игра только что началась — загрузочный экран
       pairs = existing;
-      showLoadingScreen(() => {
-        showStage2();
-      });
+      showLoadingScreen(() => showStage2());
     } else {
-      // Игра завершена
       pairs = {};
       showStage1();
       if (hasRegistered()) showRegisteredState();
@@ -863,3 +854,140 @@ function openAdminPanel() {
   adminBtn.classList.add('active');
 
   if (isAdmin()) {
+    adminLogin.classList.add('hidden');
+    adminContent.classList.remove('hidden');
+    updateAdminList();
+  } else {
+    adminLogin.classList.remove('hidden');
+    adminContent.classList.add('hidden');
+    $('adminPass').value = '';
+    $('adminPass').focus();
+  }
+}
+
+function closeAdminPanel() {
+  adminPanel.classList.add('hidden');
+  adminBtn.classList.remove('active');
+}
+
+adminBtn.onclick = () => {
+  if (adminPanel.classList.contains('hidden')) openAdminPanel();
+  else closeAdminPanel();
+};
+
+// Вход
+$('adminLoginBtn').onclick = () => {
+  const pass = $('adminPass').value.trim();
+  if (pass === ADMIN_PASSWORD) {
+    setAdmin();
+    adminLogin.classList.add('hidden');
+    adminContent.classList.remove('hidden');
+    updateAdminList();
+  } else {
+    showAdminMsg('❌ Неверный пароль');
+  }
+};
+
+$('adminPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('adminLoginBtn').click();
+});
+
+// Выход
+$('logoutBtn').onclick = () => {
+  clearAdmin();
+  closeAdminPanel();
+};
+
+// Обновление списка в админке
+async function updateAdminList() {
+  const raw = await loadParticipantsRaw();
+  const keys = Object.keys(raw);
+  $('adminCount').textContent = keys.length;
+
+  const list = $('adminList');
+  list.innerHTML = '';
+
+  if (keys.length === 0) {
+    list.innerHTML = '<div class="hint">Пока никого нет</div>';
+    return;
+  }
+
+  keys.forEach(key => {
+    const p = raw[key];
+    const row = document.createElement('div');
+    row.className = 'admin-item';
+    row.innerHTML = `
+      <span>${p.name}</span>
+      <button data-key="${key}">✕</button>
+    `;
+    row.querySelector('button').onclick = async () => {
+      if (!confirm(`Удалить участника "${p.name}"?`)) return;
+      await deleteParticipant(key);
+      if (getMyName() === p.name) clearMyName();
+      await refresh();
+    };
+    list.appendChild(row);
+  });
+}
+
+// ➕ Добавить участника вручную
+$('adminAddBtn').onclick = async () => {
+  const name = $('adminAddName').value.trim();
+  const wish = $('adminAddWish').value.trim() || 'пожелание не указано';
+
+  if (!name) return showAdminMsg('❌ Введи имя');
+  if (participants.some(p => p.name.toLowerCase() === name.toLowerCase()))
+    return showAdminMsg('❌ Такое имя уже есть');
+  if (participants.length >= MAX)
+    return showAdminMsg('❌ Список полон (макс. ' + MAX + ')');
+
+  $('adminAddBtn').disabled = true;
+  try {
+    if (await nameExists(name)) {
+      showAdminMsg('❌ Такое имя уже есть');
+      return;
+    }
+    await addParticipant(name, wish);
+    $('adminAddName').value = '';
+    $('adminAddWish').value = '';
+    showAdminMsg(`✅ ${name} добавлен(а)`);
+    await refresh();
+  } finally {
+    $('adminAddBtn').disabled = false;
+  }
+};
+
+// Начать игру
+$('startGameBtn').onclick = async () => {
+  if (participants.length < 2) {
+    showAdminMsg('Нужно минимум 2 участника');
+    return;
+  }
+  await createPairs(true);
+  await refresh();
+  showAdminMsg('🎲 Игра началась');
+};
+
+// Завершить игру
+$('endGameBtn').onclick = async () => {
+  if (!confirm('Завершить игру и удалить все пары?')) return;
+  await deletePairs();
+  pairs = {};
+  await refresh();
+  showAdminMsg('🔴 Игра завершена');
+};
+
+// Сбросить всё
+$('resetAllBtn').onclick = async () => {
+  if (!confirm('⚠️ Удалить ВСЕХ участников и ВСЕ пары? Действие необратимо!')) return;
+  await resetAll();
+  clearMyName();
+  participants = [];
+  pairs = {};
+  lastGameState = null;
+  await refresh();
+  closeAdminPanel();
+};
+</script>
+</body>
+</html>
