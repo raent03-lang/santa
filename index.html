@@ -144,6 +144,7 @@
     border: 1px solid rgba(123,220,139,.5);
     color: #eaffef; font-size: 17px;
     line-height: 1.6; padding: 22px;
+    text-align: center;
   }
   .result b { color: #ffd166; font-size: 22px; }
   .result .wish-line {
@@ -167,7 +168,7 @@
     0% { transform: scale(.9); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
   }
-  .loader { text-align: center; color: #b8e6c1; padding: 10px; font-size: 14px; }
+  .loader-text { text-align: center; color: #b8e6c1; padding: 10px; font-size: 14px; }
   .registered {
     text-align: center; padding: 20px;
     background: rgba(123,220,139,.15);
@@ -185,6 +186,80 @@
     border-radius: 12px;
   }
   .who-am-i b { color: #ffd166; font-size: 18px; }
+
+  /* ============ ЗАГРУЗОЧНЫЙ ЭКРАН ============ */
+  #loadingScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: radial-gradient(ellipse at center, #1e5631 0%, #0d2f1c 60%, #061a10 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 20px;
+  }
+  #loadingScreen .tree {
+    font-size: 90px;
+    animation: treePulse 1.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 24px rgba(255,209,102,.7));
+  }
+  @keyframes treePulse {
+    0%, 100% { transform: scale(1) rotate(-3deg); }
+    50%      { transform: scale(1.15) rotate(3deg); }
+  }
+  #loadingScreen .load-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 0 14px rgba(255,209,102,.7);
+    letter-spacing: 1px;
+  }
+  #loadingScreen .load-subtitle {
+    font-size: 15px;
+    color: #b8e6c1;
+    text-align: center;
+    min-height: 22px;
+  }
+  #loadingScreen .load-bar {
+    width: 260px;
+    max-width: 90vw;
+    height: 12px;
+    background: rgba(0,0,0,.5);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(123,220,139,.3);
+  }
+  #loadingScreen .load-bar-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #7bdc8b, #ffd166, #ff6b9d);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+    transition: width .4s ease;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  #loadingScreen .dots {
+    display: flex; gap: 10px;
+    margin-top: 8px;
+  }
+  #loadingScreen .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #ffd166;
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  #loadingScreen .dot:nth-child(2) { animation-delay: .2s; background: #7bdc8b; }
+  #loadingScreen .dot:nth-child(3) { animation-delay: .4s; background: #ff6b9d; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: .5; }
+    40%           { transform: translateY(-14px); opacity: 1; }
+  }
 
   /* ============ АДМИН-КНОПКА ============ */
   #adminBtn {
@@ -283,9 +358,40 @@
     color: #b8e6c1;
     margin-top: 6px;
   }
+
+  /* ============ ОЖИДАНИЕ СТАРТА ============ */
+  .waiting-box {
+    text-align: center;
+    padding: 24px 16px;
+    background: rgba(255,209,102,.1);
+    border: 1px dashed rgba(255,209,102,.4);
+    border-radius: 16px;
+    color: #ffd166;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .waiting-box .big {
+    font-size: 36px;
+    display: block;
+    margin-bottom: 8px;
+    animation: treePulse 2s ease-in-out infinite;
+  }
 </style>
 </head>
 <body>
+
+<!-- ============ ЗАГРУЗОЧНЫЙ ЭКРАН ============ -->
+<div id="loadingScreen" class="hidden">
+  <div class="tree">🎄</div>
+  <div class="load-title">Игра начинается…</div>
+  <div class="load-subtitle" id="loadSubtitle">Перемешиваем имена</div>
+  <div class="load-bar"><div class="load-bar-fill" id="loadBarFill"></div></div>
+  <div class="dots">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+</div>
 
 <div id="snow"></div>
 
@@ -320,19 +426,17 @@
 
     <div id="msg1" class="msg hidden"></div>
     <div id="namesList" class="list-names"></div>
-    <div id="loading" class="loader">Загрузка списка…</div>
+    <div id="loading" class="loader-text">Загрузка списка…</div>
   </div>
 
   <!-- ============ ЭТАП 2 ============ -->
   <div id="stage2" class="card hidden">
-    <h2>🎁 Узнай, кому даришь подарок</h2>
+    <h2>🎁 Твоя пара</h2>
 
     <div id="whoAmI" class="who-am-i"></div>
 
-    <button id="revealBtn">👀 Показать</button>
-
-    <div id="msg2" class="msg hidden"></div>
-    <button id="hideBtn" class="hidden">🙈 Я запомнил, скрыть</button>
+    <!-- Результат: показывается сразу -->
+    <div id="resultBox"></div>
   </div>
 
 </div>
@@ -342,7 +446,6 @@
 
 <!-- ============ АДМИН-ПАНЕЛЬ ============ -->
 <div id="adminPanel" class="hidden">
-  <!-- Экран входа -->
   <div id="adminLogin">
     <h3>🔐 Вход для админа</h3>
     <input id="adminPass" type="password" placeholder="Введи пароль" autocomplete="off">
@@ -350,25 +453,24 @@
     <div id="adminLoginMsg" class="msg-admin hidden"></div>
   </div>
 
-  <!-- Панель после входа -->
   <div id="adminContent" class="hidden">
     <h3>🎛️ Админ-панель</h3>
+
+    <div class="admin-section">
+      <button id="startGameBtn" class="green">🟢 Начать игру</button>
+      <div class="hint">Перемешивает и создаёт пары. У всех запустится загрузочный экран.</div>
+    </div>
+
+    <div class="admin-section">
+      <button id="endGameBtn" class="orange">🔴 Завершить игру</button>
+      <div class="hint">Удаляет пары. Все вернутся на этап записи.</div>
+    </div>
 
     <div class="admin-section">
       <strong style="font-size:13px; color:#b8e6c1;">➕ Добавить участника (бота)</strong>
       <input id="adminAddName" placeholder="Имя" autocomplete="off" maxlength="30">
       <input id="adminAddWish" placeholder="Пожелание (необязательно)" maxlength="150">
       <button id="adminAddBtn" class="blue">Добавить</button>
-    </div>
-
-    <div class="admin-section">
-      <button id="startGameBtn" class="green">🟢 Начать игру</button>
-      <div class="hint">Создаёт пары из текущих участников (минимум 2).</div>
-    </div>
-
-    <div class="admin-section">
-      <button id="endGameBtn" class="orange">🔴 Завершить игру</button>
-      <div class="hint">Удаляет пары. Все вернутся на этап записи.</div>
     </div>
 
     <div class="admin-section">
@@ -524,6 +626,7 @@ async function resetAll() {
 // ============ ОТРИСОВКА ============
 let participants = [];
 let pairs = {};
+let lastGameState = null; // 'idle' | 'playing'
 
 function renderList() {
   $('count').textContent = participants.length;
@@ -546,6 +649,39 @@ function showRegisteredState() {
   $('alreadyReg').innerHTML = `✅ Ты уже записан(а) как <b>${name}</b><br>Один человек — одна запись.`;
 }
 
+// ============ ЗАГРУЗОЧНЫЙ ЭКРАН ============
+const loadingSteps = [
+  'Перемешиваем имена',
+  'Связываем пары',
+  'Прячем пожелания',
+  'Готово! 🎁'
+];
+
+function showLoadingScreen(callback) {
+  const ls = $('loadingScreen');
+  ls.classList.remove('hidden');
+  const bar = $('loadBarFill');
+  const subtitle = $('loadSubtitle');
+  let progress = 0;
+
+  const interval = setInterval(() => {
+    progress += 5;
+    bar.style.width = Math.min(progress, 100) + '%';
+
+    const stepIndex = Math.min(Math.floor(progress / 26), loadingSteps.length - 1);
+    subtitle.textContent = loadingSteps[stepIndex];
+
+    if (progress >= 100) {
+      clearInterval(interval);
+      setTimeout(() => {
+        ls.classList.add('hidden');
+        bar.style.width = '0%';
+        if (callback) callback();
+      }, 400);
+    }
+  }, 120);  // ~2.4 секунды
+}
+
 // ============ ПАРЫ ============
 async function createPairs(force = false) {
   if (!force && participants.length < 2) return;
@@ -562,28 +698,65 @@ async function createPairs(force = false) {
   return true;
 }
 
-async function maybeShuffle() {
-  if (participants.length !== MAX) return;
-  const existing = await loadPairs();
-  if (existing) { pairs = existing; showStage2(); return; }
+// Показ результата — теперь БЕЗ кнопок
+function renderResult() {
+  const myName = getMyName();
+  const box = $('resultBox');
+  const who = $('whoAmI');
 
-  await createPairs();
-  showStage2();
+  // Игра ещё не началась
+  if (!pairs || Object.keys(pairs).length === 0) {
+    who.innerHTML = '';
+    box.innerHTML = `
+      <div class="waiting-box">
+        <span class="big">⏳</span>
+        Игра ещё не началась.<br>
+        Жди, пока учитель запустит её в админ-панели.
+      </div>
+    `;
+    return;
+  }
+
+  // Игра идёт, но я не зарегистрирован
+  if (!myName) {
+    who.innerHTML = '';
+    box.innerHTML = `
+      <div class="waiting-box">
+        <span class="big">⚠️</span>
+        Ты не зарегистрирован(а) на этом устройстве.<br>
+        Открой сайт со своего телефона.
+      </div>
+    `;
+    return;
+  }
+
+  // Игра идёт, я зарегистрирован
+  who.innerHTML = `Ты — <b>${myName}</b>`;
+
+  const p = pairs[myName];
+  if (!p) {
+    box.innerHTML = `
+      <div class="waiting-box">
+        <span class="big">🔍</span>
+        Твоего имени нет в списке пар.<br>
+        Возможно, тебя удалили из участников.
+      </div>
+    `;
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="msg result">
+      Ты даришь подарок для <b>${p.to}</b>
+      <span class="wish-line">💭 Его пожелание: <b>${p.wish}</b></span>
+    </div>
+  `;
 }
 
 function showStage2() {
   $('stage1').classList.add('hidden');
   $('stage2').classList.remove('hidden');
-
-  const myName = getMyName();
-  const who = $('whoAmI');
-
-  if (myName) {
-    who.innerHTML = `Ты — <b>${myName}</b>`;
-  } else {
-    who.innerHTML = `⚠️ Ты не зарегистрирован(а) на этом устройстве.<br>Открой сайт со своего телефона, чтобы узнать свою пару.`;
-    $('revealBtn').disabled = true;
-  }
+  renderResult();
 }
 
 function showStage1() {
@@ -599,15 +772,29 @@ async function refresh() {
   updateAdminList();
 
   const existing = await loadPairs();
-  if (existing) {
+  const hasGame = existing && Object.keys(existing).length > 0;
+
+  // Определяем, изменилось ли состояние игры → показываем загрузочный экран
+  const newState = hasGame ? 'playing' : 'idle';
+  if (lastGameState !== null && lastGameState !== newState) {
+    if (newState === 'playing') {
+      // Игра только что началась — загрузочный экран
+      pairs = existing;
+      showLoadingScreen(() => {
+        showStage2();
+      });
+    } else {
+      // Игра завершена
+      pairs = {};
+      showStage1();
+      if (hasRegistered()) showRegisteredState();
+    }
+  } else if (hasGame) {
     pairs = existing;
     if ($('stage2').classList.contains('hidden')) {
       showStage2();
     } else {
-      const myName = getMyName();
-      $('whoAmI').innerHTML = myName
-        ? `Ты — <b>${myName}</b>`
-        : `⚠️ Ты не зарегистрирован(а) на этом устройстве.`;
+      renderResult();
     }
   } else {
     pairs = {};
@@ -615,11 +802,12 @@ async function refresh() {
       showStage1();
       if (hasRegistered()) showRegisteredState();
     }
-    await maybeShuffle();
   }
+
+  lastGameState = newState;
 }
 
-setInterval(refresh, 5000);
+setInterval(refresh, 3000);
 refresh();
 
 if (hasRegistered()) {
@@ -664,30 +852,6 @@ $('nameInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('wishInput').focus();
 });
 
-$('revealBtn').onclick = () => {
-  const me = getMyName();
-  if (!me) return showMsg('msg2', 'Ты не зарегистрирован(а) на этом устройстве.');
-  if (!participants.some(p => p.name === me))
-    return showMsg('msg2', 'Твоего имени нет в списке. Зарегистрируйся заново.');
-
-  const p = pairs[me];
-  if (!p) return showMsg('msg2', 'Пары ещё не созданы.');
-
-  const box = $('msg2');
-  box.className = 'msg result';
-  box.innerHTML = `
-    Ты даришь подарок для <b>${p.to}</b>
-    <span class="wish-line">💭 Его пожелание: <b>${p.wish}</b></span>
-  `;
-  box.classList.remove('hidden');
-  $('hideBtn').classList.remove('hidden');
-};
-
-$('hideBtn').onclick = () => {
-  $('msg2').classList.add('hidden');
-  $('hideBtn').classList.add('hidden');
-};
-
 // ===================== АДМИН-ПАНЕЛЬ =====================
 const adminBtn = $('adminBtn');
 const adminPanel = $('adminPanel');
@@ -699,139 +863,3 @@ function openAdminPanel() {
   adminBtn.classList.add('active');
 
   if (isAdmin()) {
-    adminLogin.classList.add('hidden');
-    adminContent.classList.remove('hidden');
-    updateAdminList();
-  } else {
-    adminLogin.classList.remove('hidden');
-    adminContent.classList.add('hidden');
-    $('adminPass').value = '';
-    $('adminPass').focus();
-  }
-}
-
-function closeAdminPanel() {
-  adminPanel.classList.add('hidden');
-  adminBtn.classList.remove('active');
-}
-
-adminBtn.onclick = () => {
-  if (adminPanel.classList.contains('hidden')) openAdminPanel();
-  else closeAdminPanel();
-};
-
-// Вход
-$('adminLoginBtn').onclick = () => {
-  const pass = $('adminPass').value.trim();
-  if (pass === ADMIN_PASSWORD) {
-    setAdmin();
-    adminLogin.classList.add('hidden');
-    adminContent.classList.remove('hidden');
-    updateAdminList();
-  } else {
-    showAdminMsg('❌ Неверный пароль');
-  }
-};
-
-$('adminPass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') $('adminLoginBtn').click();
-});
-
-// Выход
-$('logoutBtn').onclick = () => {
-  clearAdmin();
-  closeAdminPanel();
-};
-
-// Обновление списка
-async function updateAdminList() {
-  const raw = await loadParticipantsRaw();
-  const keys = Object.keys(raw);
-  $('adminCount').textContent = keys.length;
-
-  const list = $('adminList');
-  list.innerHTML = '';
-
-  if (keys.length === 0) {
-    list.innerHTML = '<div class="hint">Пока никого нет</div>';
-    return;
-  }
-
-  keys.forEach(key => {
-    const p = raw[key];
-    const row = document.createElement('div');
-    row.className = 'admin-item';
-    row.innerHTML = `
-      <span>${p.name}</span>
-      <button data-key="${key}">✕</button>
-    `;
-    row.querySelector('button').onclick = async () => {
-      if (!confirm(`Удалить участника "${p.name}"?`)) return;
-      await deleteParticipant(key);
-      if (getMyName() === p.name) clearMyName();
-      await refresh();
-    };
-    list.appendChild(row);
-  });
-}
-
-// ➕ Добавить участника вручную
-$('adminAddBtn').onclick = async () => {
-  const name = $('adminAddName').value.trim();
-  const wish = $('adminAddWish').value.trim() || 'пожелание не указано';
-
-  if (!name) return showAdminMsg('❌ Введи имя');
-  if (participants.some(p => p.name.toLowerCase() === name.toLowerCase()))
-    return showAdminMsg('❌ Такое имя уже есть');
-  if (participants.length >= MAX)
-    return showAdminMsg('❌ Список полон (макс. ' + MAX + ')');
-
-  $('adminAddBtn').disabled = true;
-  try {
-    if (await nameExists(name)) {
-      showAdminMsg('❌ Такое имя уже есть');
-      return;
-    }
-    await addParticipant(name, wish);
-    $('adminAddName').value = '';
-    $('adminAddWish').value = '';
-    showAdminMsg(`✅ ${name} добавлен(а)`);
-    await refresh();
-  } finally {
-    $('adminAddBtn').disabled = false;
-  }
-};
-
-// Начать игру
-$('startGameBtn').onclick = async () => {
-  if (participants.length < 2) {
-    showAdminMsg('Нужно минимум 2 участника');
-    return;
-  }
-  await createPairs(true);
-  await refresh();
-  showAdminMsg('🎲 Игра началась');
-};
-
-// Завершить игру
-$('endGameBtn').onclick = async () => {
-  if (!confirm('Завершить игру и удалить все пары?')) return;
-  await deletePairs();
-  pairs = {};
-  await refresh();
-  showAdminMsg('🔴 Игра завершена');
-};
-
-// Сбросить всё
-$('resetAllBtn').onclick = async () => {
-  if (!confirm('⚠️ Удалить ВСЕХ участников и ВСЕ пары? Действие необратимо!')) return;
-  await resetAll();
-  clearMyName();
-  participants = [];
-  pairs = {};
-  await refresh();
-  closeAdminPanel();
-};
-</script>
-</body>
-</html>
