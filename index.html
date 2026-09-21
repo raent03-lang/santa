@@ -28,7 +28,7 @@
   }
   .container {
     max-width: 640px; margin: 0 auto;
-    position: relative; z-index: 2; padding-top: 30px;
+    position: relative; z-index: 2; padding-top: 30px; padding-bottom: 80px;
   }
   h1 {
     text-align: center; font-size: 32px; font-weight: 700;
@@ -94,6 +94,21 @@
     background: rgba(255,255,255,.12);
     color: rgba(255,255,255,.4);
     cursor: not-allowed; box-shadow: none;
+  }
+  button.green {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    box-shadow: 0 6px 20px rgba(46,204,113,.4);
+  }
+  button.green:hover:not(:disabled) { box-shadow: 0 10px 26px rgba(46,204,113,.55); }
+  button.orange {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    box-shadow: 0 6px 20px rgba(243,156,18,.4);
+  }
+  button.orange:hover:not(:disabled) { box-shadow: 0 10px 26px rgba(243,156,18,.55); }
+  button.dark {
+    background: rgba(0,0,0,.4);
+    border: 1px solid rgba(255,255,255,.2);
+    box-shadow: none;
   }
   .counter {
     text-align: center; font-size: 16px; margin: 18px 0 6px;
@@ -165,6 +180,104 @@
     border-radius: 12px;
   }
   .who-am-i b { color: #ffd166; font-size: 18px; }
+
+  /* ============ АДМИН-КНОПКА ============ */
+  #adminBtn {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 100;
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 12px;
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.25);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    width: auto;
+    margin: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  }
+  #adminBtn:hover { background: rgba(0,0,0,.75); transform: none; }
+  #adminBtn.active { background: linear-gradient(135deg, #f39c12, #e67e22); border-color: transparent; }
+
+  /* ============ АДМИН-ПАНЕЛЬ ============ */
+  #adminPanel {
+    position: fixed;
+    left: 16px;
+    bottom: 70px;
+    z-index: 100;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    background: rgba(15, 30, 20, .95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    animation: pop .25s ease;
+  }
+  #adminPanel h3 {
+    margin: 0 0 14px; font-size: 16px;
+    color: #ffd166; font-weight: 700;
+  }
+  #adminPanel .admin-section {
+    padding: 12px 0;
+    border-top: 1px solid rgba(255,255,255,.1);
+  }
+  #adminPanel .admin-section:first-of-type { border-top: none; padding-top: 0; }
+  #adminPanel button {
+    font-size: 14px;
+    padding: 10px;
+    margin-top: 8px;
+  }
+  #adminPanel input {
+    font-size: 14px;
+    padding: 10px 12px;
+    margin-top: 6px;
+  }
+  #adminPanel .admin-list {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  #adminPanel .admin-item {
+    display: flex; justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.06);
+    border-radius: 10px;
+    font-size: 14px;
+    color: #d4ffe0;
+  }
+  #adminPanel .admin-item button {
+    width: auto;
+    padding: 4px 10px;
+    margin: 0;
+    font-size: 12px;
+    background: rgba(230,57,70,.7);
+    box-shadow: none;
+  }
+  #adminPanel .admin-item button:hover { background: #e63946; transform: none; }
+  #adminPanel .msg-admin {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(255,209,102,.2);
+    color: #ffd166;
+    font-size: 13px;
+    text-align: center;
+  }
+  #adminPanel .hint {
+    font-size: 12px;
+    color: #b8e6c1;
+    margin-top: 6px;
+  }
 </style>
 </head>
 <body>
@@ -219,10 +332,56 @@
 
 </div>
 
+<!-- ============ АДМИН-КНОПКА ============ -->
+<button id="adminBtn">⚙️ Админ</button>
+
+<!-- ============ АДМИН-ПАНЕЛЬ ============ -->
+<div id="adminPanel" class="hidden">
+  <!-- Экран входа -->
+  <div id="adminLogin">
+    <h3>🔐 Вход для админа</h3>
+    <input id="adminPass" type="password" placeholder="Введи пароль" autocomplete="off">
+    <button id="adminLoginBtn" class="orange">Войти</button>
+    <div id="adminLoginMsg" class="msg-admin hidden"></div>
+  </div>
+
+  <!-- Панель после входа -->
+  <div id="adminContent" class="hidden">
+    <h3>🎛️ Админ-панель</h3>
+
+    <div class="admin-section">
+      <button id="startGameBtn" class="green">🟢 Начать игру</button>
+      <div class="hint">Создаёт пары из текущих участников (минимум 2).</div>
+    </div>
+
+    <div class="admin-section">
+      <button id="endGameBtn" class="orange">🔴 Завершить игру</button>
+      <div class="hint">Удаляет пары. Все вернутся на этап записи.</div>
+    </div>
+
+    <div class="admin-section">
+      <strong style="font-size:13px; color:#b8e6c1;">Участники (<span id="adminCount">0</span>):</strong>
+      <div id="adminList" class="admin-list">
+        <div class="hint">Пока никого нет</div>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <button id="resetAllBtn" class="dark">🚨 Сбросить ВСЁ</button>
+      <div class="hint">Полная очистка: участники + пары. Необратимо!</div>
+    </div>
+
+    <div class="admin-section">
+      <button id="logoutBtn" class="dark">🚪 Выйти из админа</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ========== НАСТРОЙКА ==========
 const FIREBASE_URL = 'https://secret-santa-5class-default-rtdb.europe-west1.firebasedatabase.app';
 const MAX = 2;
+const ADMIN_PASSWORD = '1234';
 // ===============================
 
 const $ = id => document.getElementById(id);
@@ -254,6 +413,14 @@ function showMsg(id, text, type = 'info') {
   el._t = setTimeout(() => el.classList.add('hidden'), 4000);
 }
 
+function showAdminMsg(text) {
+  const el = $('adminLoginMsg');
+  el.textContent = text;
+  el.classList.remove('hidden');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
 // ============ LOCALSTORAGE ============
 function hasRegistered() {
   return localStorage.getItem('santa_my_name') !== null;
@@ -263,6 +430,20 @@ function getMyName() {
 }
 function setMyName(name) {
   localStorage.setItem('santa_my_name', name);
+}
+function clearMyName() {
+  localStorage.removeItem('santa_my_name');
+}
+
+// Админ — запоминаем вход
+function isAdmin() {
+  return localStorage.getItem('santa_admin') === 'yes';
+}
+function setAdmin() {
+  localStorage.setItem('santa_admin', 'yes');
+}
+function clearAdmin() {
+  localStorage.removeItem('santa_admin');
 }
 
 // ============ FIREBASE API ============
@@ -274,6 +455,17 @@ async function loadParticipants() {
   } catch (e) {
     console.error('Ошибка загрузки:', e);
     return [];
+  }
+}
+
+// Сырые данные с ключами (для удаления конкретного участника)
+async function loadParticipantsRaw() {
+  try {
+    const res = await fetch(`${FIREBASE_URL}/participants.json`);
+    const data = await res.json();
+    return data || {};
+  } catch (e) {
+    return {};
   }
 }
 
@@ -290,12 +482,20 @@ async function addParticipant(name, wish) {
   });
 }
 
+async function deleteParticipant(key) {
+  await fetch(`${FIREBASE_URL}/participants/${key}.json`, { method: 'DELETE' });
+}
+
 async function savePairs(pairs) {
   await fetch(`${FIREBASE_URL}/pairs.json`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(pairs)
   });
+}
+
+async function deletePairs() {
+  await fetch(`${FIREBASE_URL}/pairs.json`, { method: 'DELETE' });
 }
 
 async function loadPairs() {
@@ -305,6 +505,11 @@ async function loadPairs() {
   } catch (e) {
     return null;
   }
+}
+
+async function resetAll() {
+  await fetch(`${FIREBASE_URL}/participants.json`, { method: 'DELETE' });
+  await fetch(`${FIREBASE_URL}/pairs.json`, { method: 'DELETE' });
 }
 
 // ============ ОТРИСОВКА ============
@@ -317,7 +522,6 @@ function renderList() {
 
   const list = $('namesList');
   list.innerHTML = '';
-  // 🔒 Показываем ТОЛЬКО имена — БЕЗ пожеланий
   participants.forEach(p => {
     const chip = document.createElement('div');
     chip.className = 'chip';
@@ -334,21 +538,27 @@ function showRegisteredState() {
 }
 
 // ============ ПАРЫ ============
-async function maybeShuffle() {
-  if (participants.length !== MAX) return;
-  const existing = await loadPairs();
-  if (existing) { pairs = existing; showStage2(); return; }
+async function createPairs(force = false) {
+  if (!force && participants.length < 2) return;
 
   const shuffled = [...participants].sort(() => Math.random() - 0.5);
   const newPairs = {};
   shuffled.forEach((p, i) => {
     const target = shuffled[(i + 1) % shuffled.length];
-    // 🔒 В пары сохраняем и имя, и пожелание — но отдаём их только при показе
     newPairs[p.name] = { to: target.name, wish: target.wish || 'пожелание не указано' };
   });
 
   await savePairs(newPairs);
   pairs = newPairs;
+  return true;
+}
+
+async function maybeShuffle() {
+  if (participants.length !== MAX) return;
+  const existing = await loadPairs();
+  if (existing) { pairs = existing; showStage2(); return; }
+
+  await createPairs();
   showStage2();
 }
 
@@ -367,11 +577,17 @@ function showStage2() {
   }
 }
 
+function showStage1() {
+  $('stage1').classList.remove('hidden');
+  $('stage2').classList.add('hidden');
+}
+
 // ============ ОБНОВЛЕНИЕ ============
 async function refresh() {
   participants = await loadParticipants();
   renderList();
   $('loading').classList.add('hidden');
+  updateAdminList();
 
   const existing = await loadPairs();
   if (existing) {
@@ -385,6 +601,11 @@ async function refresh() {
         : `⚠️ Ты не зарегистрирован(а) на этом устройстве.`;
     }
   } else {
+    pairs = {};
+    if (!$('stage2').classList.contains('hidden')) {
+      showStage1();
+      if (hasRegistered()) showRegisteredState();
+    }
     await maybeShuffle();
   }
 }
@@ -396,7 +617,7 @@ if (hasRegistered()) {
   showRegisteredState();
 }
 
-// ============ ДЕЙСТВИЯ ============
+// ============ ДЕЙСТВИЯ УЧАСТНИКА ============
 $('addBtn').onclick = async () => {
   if (hasRegistered()) {
     showMsg('msg1', 'Ты уже записан(а) с этого устройства!');
@@ -434,17 +655,11 @@ $('nameInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('wishInput').focus();
 });
 
-// ============ ПОКАЗ ПАРЫ ============
 $('revealBtn').onclick = () => {
   const me = getMyName();
-
-  if (!me) {
-    return showMsg('msg2', 'Ты не зарегистрирован(а) на этом устройстве.');
-  }
-
-  if (!participants.some(p => p.name === me)) {
+  if (!me) return showMsg('msg2', 'Ты не зарегистрирован(а) на этом устройстве.');
+  if (!participants.some(p => p.name === me))
     return showMsg('msg2', 'Твоего имени нет в списке. Зарегистрируйся заново.');
-  }
 
   const p = pairs[me];
   if (!p) return showMsg('msg2', 'Пары ещё не созданы.');
@@ -462,6 +677,123 @@ $('revealBtn').onclick = () => {
 $('hideBtn').onclick = () => {
   $('msg2').classList.add('hidden');
   $('hideBtn').classList.add('hidden');
+};
+
+// ===================== АДМИН-ПАНЕЛЬ =====================
+const adminBtn = $('adminBtn');
+const adminPanel = $('adminPanel');
+const adminLogin = $('adminLogin');
+const adminContent = $('adminContent');
+
+function openAdminPanel() {
+  adminPanel.classList.remove('hidden');
+  adminBtn.classList.add('active');
+
+  if (isAdmin()) {
+    adminLogin.classList.add('hidden');
+    adminContent.classList.remove('hidden');
+    updateAdminList();
+  } else {
+    adminLogin.classList.remove('hidden');
+    adminContent.classList.add('hidden');
+    $('adminPass').value = '';
+    $('adminPass').focus();
+  }
+}
+
+function closeAdminPanel() {
+  adminPanel.classList.add('hidden');
+  adminBtn.classList.remove('active');
+}
+
+adminBtn.onclick = () => {
+  if (adminPanel.classList.contains('hidden')) openAdminPanel();
+  else closeAdminPanel();
+};
+
+// Вход
+$('adminLoginBtn').onclick = () => {
+  const pass = $('adminPass').value.trim();
+  if (pass === ADMIN_PASSWORD) {
+    setAdmin();
+    adminLogin.classList.add('hidden');
+    adminContent.classList.remove('hidden');
+    updateAdminList();
+  } else {
+    showAdminMsg('❌ Неверный пароль');
+  }
+};
+
+$('adminPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('adminLoginBtn').click();
+});
+
+// Выход из админа
+$('logoutBtn').onclick = () => {
+  clearAdmin();
+  closeAdminPanel();
+};
+
+// Обновление списка участников в админке
+async function updateAdminList() {
+  const raw = await loadParticipantsRaw();
+  const keys = Object.keys(raw);
+  $('adminCount').textContent = keys.length;
+
+  const list = $('adminList');
+  list.innerHTML = '';
+
+  if (keys.length === 0) {
+    list.innerHTML = '<div class="hint">Пока никого нет</div>';
+    return;
+  }
+
+  keys.forEach(key => {
+    const p = raw[key];
+    const row = document.createElement('div');
+    row.className = 'admin-item';
+    row.innerHTML = `
+      <span>${p.name}</span>
+      <button data-key="${key}">✕</button>
+    `;
+    row.querySelector('button').onclick = async () => {
+      if (!confirm(`Удалить участника "${p.name}"?`)) return;
+      await deleteParticipant(key);
+      // Если удаляем себя — очищаем localStorage
+      if (getMyName() === p.name) clearMyName();
+      await refresh();
+    };
+    list.appendChild(row);
+  });
+}
+
+// Начать игру
+$('startGameBtn').onclick = async () => {
+  if (participants.length < 2) {
+    showAdminMsg('Нужно минимум 2 участника');
+    return;
+  }
+  await createPairs(true);
+  await refresh();
+};
+
+// Завершить игру
+$('endGameBtn').onclick = async () => {
+  if (!confirm('Завершить игру и удалить все пары?')) return;
+  await deletePairs();
+  pairs = {};
+  await refresh();
+};
+
+// Сбросить всё
+$('resetAllBtn').onclick = async () => {
+  if (!confirm('⚠️ Удалить ВСЕХ участников и ВСЕ пары? Действие необратимо!')) return;
+  await resetAll();
+  clearMyName();
+  participants = [];
+  pairs = {};
+  await refresh();
+  closeAdminPanel();
 };
 </script>
 </body>
